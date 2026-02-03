@@ -1,0 +1,208 @@
+/* Models Grid */
+.models-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Model Card */
+.model-card {
+  --model-color: var(--primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  position: relative;
+  transition: all var(--transition-base);
+}
+
+.model-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--model-color);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.model-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--model-color);
+  box-shadow: 0 10px 40px color-mix(in srgb, var(--model-color) 15%, transparent);
+}
+
+.model-card.winner {
+  border-color: var(--model-color);
+  background: linear-gradient(135deg, var(--bg-card), color-mix(in srgb, var(--model-color) 5%, transparent));
+}
+
+/* Winner Badge */
+.winner-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--model-color);
+  color: white;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Model Header */
+.model-header {
+  margin-bottom: 0.75rem;
+}
+
+.model-header h3 {
+  font-size: 1.5rem;
+  color: var(--model-color);
+  margin-bottom: 0.25rem;
+}
+
+.model-fullname {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.model-description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+/* Model Metrics */
+.model-metrics {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.25rem;
+}
+
+.model-metrics .metric {
+  flex: 1;
+  text-align: center;
+}
+
+.model-metrics .metric-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.model-metrics .metric-value {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--model-color);
+}
+
+/* Pros and Cons */
+.model-pros-cons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.model-pros-cons h4 {
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.model-pros-cons ul {
+  list-style: none;
+}
+
+.model-pros-cons li {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 0.25rem 0;
+}
+
+/* Prediction Chart */
+.prediction-chart {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.prediction-chart .chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.prediction-chart .chart-header h3 {
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.prediction-chart .chart-header p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.chart-legend {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+}
+
+.legend-actual { color: #fff; }
+.legend-arima { color: #6366f1; }
+.legend-prophet { color: #10b981; }
+.legend-lstm { color: #f59e0b; }
+
+/* Model Summary */
+.model-summary {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05));
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: var(--radius-lg);
+}
+
+.model-summary svg {
+  color: #8b5cf6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.model-summary p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.model-summary strong {
+  color: var(--text-primary);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .models-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .prediction-chart .chart-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}

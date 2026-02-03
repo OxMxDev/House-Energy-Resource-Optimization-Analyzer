@@ -1,0 +1,15 @@
+/* App-specific styles */
+
+.placeholder-content {
+  background: var(--bg-card);
+  border: 2px dashed var(--border-visible);
+  border-radius: var(--radius-lg);
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.placeholder-content p {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
