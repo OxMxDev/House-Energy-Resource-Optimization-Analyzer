@@ -164,8 +164,8 @@ export default function DataCollection() {
         <div className="note-icon">💡</div>
         <p>
           <strong>Data Integration:</strong> All three datasets are aligned to a common hourly timestamp 
-          and merged on date-time for unified analysis. Missing values are interpolated using 
-          forward-fill and linear interpolation methods.
+          and merged into <code>merged_dataset.csv</code> with ML-ready features including cyclical time 
+          encodings (hour_sin, hour_cos), temperature sensitivity, and peak hour flags.
         </p>
       </div>
     </section>

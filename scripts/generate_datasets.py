@@ -1,6 +1,7 @@
 """
 Dataset Generator Script
 Generates 1000+ rows of realistic data for each dataset
+Updated: Uses current dates (2026) instead of 2016
 """
 
 import csv
@@ -10,11 +11,12 @@ from datetime import datetime, timedelta
 
 random.seed(42)
 
-# Generate 1000 hours of data (~42 days)
-START_DATE = datetime(2016, 1, 1, 0, 0, 0)
+# Generate 1000 hours of data (~42 days) starting from January 2026
+START_DATE = datetime(2026, 1, 1, 0, 0, 0)
 NUM_HOURS = 1000
 
 print("Generating datasets with 1000 rows each...")
+print(f"Date range: {START_DATE} to {START_DATE + timedelta(hours=NUM_HOURS)}")
 
 # ================================================
 # 1. ENERGY CONSUMPTION DATASET
@@ -73,7 +75,7 @@ with open('data/energy_consumption.csv', 'w', newline='') as f:
 print("   ✓ energy_consumption.csv created (1000 rows)")
 
 # ================================================
-# 2. WEATHER DATASET (Chennai)
+# 2. WEATHER DATASET (Chennai - Current conditions)
 # ================================================
 print("\n2. Generating weather_chennai.csv...")
 
@@ -89,37 +91,37 @@ with open('data/weather_chennai.csv', 'w', newline='') as f:
     for i in range(NUM_HOURS):
         dt = START_DATE + timedelta(hours=i)
         hour = dt.hour
-        day_of_year = (dt - datetime(2016, 1, 1)).days
+        day_of_year = (dt - datetime(2026, 1, 1)).days
         
-        # Temperature: Chennai pattern (23-35°C)
-        # Base temp with daily cycle and slight seasonal variation
-        base_temp = 28 + 3 * math.sin(2 * math.pi * day_of_year / 365)
-        daily_cycle = 5 * math.sin(2 * math.pi * (hour - 6) / 24)
+        # Temperature: Chennai January pattern (22-32°C range, cooler in Jan)
+        # Current Chennai weather in early Feb is around 23-28°C
+        base_temp = 25 + 2 * math.sin(2 * math.pi * day_of_year / 365)
+        daily_cycle = 4 * math.sin(2 * math.pi * (hour - 6) / 24)
         temp = base_temp + daily_cycle + random.uniform(-1, 1)
-        temp = max(22, min(36, temp))
+        temp = max(20, min(32, temp))
         
-        # Humidity: inverse of temperature
-        humidity = 75 - (temp - 25) * 2 + random.uniform(-5, 5)
-        humidity = max(35, min(85, humidity))
+        # Humidity: inverse of temperature (Chennai Jan is less humid)
+        humidity = 70 - (temp - 24) * 2 + random.uniform(-5, 5)
+        humidity = max(40, min(80, humidity))
         
         # Wind speed
         wind = 8 + 4 * math.sin(2 * math.pi * hour / 24) + random.uniform(-2, 2)
-        wind = max(2, min(20, wind))
+        wind = max(2, min(18, wind))
         
         # Pressure
-        pressure = 1010 + random.uniform(-3, 3)
+        pressure = 1012 + random.uniform(-3, 3)
         
         # Precipitation (rare in Jan-Feb for Chennai)
-        precip = 0 if random.random() > 0.05 else round(random.uniform(0.1, 2.0), 1)
+        precip = 0 if random.random() > 0.02 else round(random.uniform(0.1, 1.0), 1)
         
         # Weather condition based on hour and temp
         if hour >= 6 and hour <= 17:
-            if temp > 32:
+            if temp > 28:
                 condition = 'Sunny'
-            elif temp > 28:
+            elif temp > 25:
                 condition = random.choice(['Sunny', 'Partly Cloudy'])
             else:
-                condition = random.choice(['Partly Cloudy', 'Cloudy'])
+                condition = random.choice(['Partly Cloudy', 'Clear'])
         else:
             condition = random.choice(['Clear', 'Clear', 'Hazy'])
         
@@ -153,15 +155,15 @@ with open('data/merged_dataset.csv', 'w', newline='') as f:
         hour = dt.hour
         day_of_week = dt.weekday()
         is_weekend = 1 if day_of_week >= 5 else 0
-        day_of_year = (dt - datetime(2016, 1, 1)).days
+        day_of_year = (dt - datetime(2026, 1, 1)).days
         
-        # Temperature
-        base_temp = 28 + 3 * math.sin(2 * math.pi * day_of_year / 365)
-        daily_cycle = 5 * math.sin(2 * math.pi * (hour - 6) / 24)
+        # Temperature (matching weather dataset)
+        base_temp = 25 + 2 * math.sin(2 * math.pi * day_of_year / 365)
+        daily_cycle = 4 * math.sin(2 * math.pi * (hour - 6) / 24)
         temp = base_temp + daily_cycle + random.uniform(-1, 1)
         
         # Humidity
-        humidity = 75 - (temp - 25) * 2 + random.uniform(-5, 5)
+        humidity = 70 - (temp - 24) * 2 + random.uniform(-5, 5)
         
         # Price (ToU)
         if hour >= 22 or hour < 6:
@@ -207,14 +209,45 @@ with open('data/merged_dataset.csv', 'w', newline='') as f:
 print("   ✓ merged_dataset.csv created (1000 rows)")
 
 # ================================================
+# 4. TOU PRICING (with 2026 dates)
+# ================================================
+print("\n4. Generating tou_pricing.csv...")
+
+def get_tier(hour):
+    if hour >= 22 or hour < 6:
+        return (4.50, 'Off-Peak', 'Night hours - lowest demand')
+    elif hour >= 18 and hour < 22:
+        return (8.50, 'Peak', 'Evening peak - highest demand')
+    else:
+        return (6.00, 'Normal', 'Regular hours - moderate demand')
+
+with open('data/tou_pricing.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['timestamp', 'hour', 'time_period', 'price_per_kwh_inr', 'tier', 'description'])
+    
+    for i in range(NUM_HOURS):
+        dt = START_DATE + timedelta(hours=i)
+        hour = dt.hour
+        price, tier, desc = get_tier(hour)
+        period = f'{hour:02d}:00-{(hour+1)%24:02d}:00'
+        writer.writerow([
+            dt.strftime('%Y-%m-%d %H:%M:%S'),
+            hour, period, price, tier, desc
+        ])
+
+print("   ✓ tou_pricing.csv created (1000 rows)")
+
+# ================================================
 # SUMMARY
 # ================================================
 print("\n" + "="*50)
 print("✅ ALL DATASETS GENERATED SUCCESSFULLY!")
 print("="*50)
+print(f"\nDate range: January 1, 2026 - February 11, 2026")
 print("\nFiles created in data/ folder:")
 print("  • energy_consumption.csv  (1000 rows)")
 print("  • weather_chennai.csv     (1000 rows)")
 print("  • merged_dataset.csv      (1000 rows)")
-print("  • tou_pricing.csv         (24 rows - hourly tariff)")
-print("\nTotal: 3024 data points")
+print("  • tou_pricing.csv         (1000 rows)")
+print("\nTotal: 4000 data points")
+print("\nWeather: Chennai January 2026 (22-28°C typical)")
