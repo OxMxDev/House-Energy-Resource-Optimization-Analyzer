@@ -115,7 +115,7 @@ DataScienceProject/
 
 ### Prerequisites
 - Node.js 18+
-- Python 3.8+ (for ML scripts)
+- Python 3.8+ (for ML scripts and API)
 
 ### Frontend Setup
 ```bash
@@ -126,10 +126,19 @@ npm install
 npm run dev
 ```
 
-### Python Dependencies (Optional)
+### Backend API Setup
 ```bash
-pip install pandas numpy matplotlib scikit-learn statsmodels prophet tensorflow pulp
+# Install Python dependencies
+pip install flask flask-cors pandas numpy scikit-learn statsmodels pulp
+
+# Run the Flask API (required for live predictions)
+python api.py
 ```
+
+The API runs at `http://localhost:5000` and provides:
+- `GET /api/predictions` - ARIMA model predictions
+- `POST /api/optimize` - Linear Programming optimization
+- `GET /api/health` - Health check
 
 ---
 
@@ -229,10 +238,10 @@ A new interactive tool that allows users to:
 
 ## 👨‍💻 Author
 
-**Final Year Engineering Project**  
-Data Science & Machine Learning
+Om Dwivedi
 
----
+**Data Science Project**  
+Data Science & Machine Learning
 
 ## 📄 License
 

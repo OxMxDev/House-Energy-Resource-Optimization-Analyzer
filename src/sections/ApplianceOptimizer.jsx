@@ -9,7 +9,8 @@ import {
   Play,
   RotateCcw,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Cpu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Plot from 'react-plotly.js';
@@ -74,6 +75,8 @@ export default function ApplianceOptimizer() {
     preferredHour: 19
   });
   const [isOptimized, setIsOptimized] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [usingAPI, setUsingAPI] = useState(false);
   const [results, setResults] = useState([]);
   
   // Data loading state
@@ -273,15 +276,55 @@ export default function ApplianceOptimizer() {
     setResults([]);
   };
 
-  const runOptimization = () => {
-    const optimized = optimizeSchedule(appliances);
-    setResults(optimized);
-    setIsOptimized(true);
+  const runOptimization = async () => {
+    setIsOptimizing(true);
+    
+    // Try API first (real Linear Programming)
+    try {
+      const response = await fetch('http://localhost:5000/api/optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appliances: appliances.map(app => ({
+            id: app.id,
+            name: app.name,
+            power: app.power,
+            duration: app.duration,
+            preferredHour: app.preferredHour
+          })),
+          baseLoad: baseLoad,
+          maxPower: 8.0
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setResults(data.results);
+          setIsOptimized(true);
+          setUsingAPI(true);
+          setIsOptimizing(false);
+          console.log('✅ LP Optimization via API:', data.method);
+          return;
+        }
+      }
+      throw new Error('API request failed');
+    } catch (error) {
+      console.log('API not available, using local optimization');
+      // Fallback to local algorithm
+      const optimized = optimizeSchedule(appliances);
+      setResults(optimized);
+      setIsOptimized(true);
+      setUsingAPI(false);
+    }
+    
+    setIsOptimizing(false);
   };
 
   const resetOptimization = () => {
     setResults([]);
     setIsOptimized(false);
+    setUsingAPI(false);
   };
 
   // Chart data
@@ -335,7 +378,10 @@ export default function ApplianceOptimizer() {
         </div>
         <div>
           <h2 className="section-title">Smart Appliance Optimizer</h2>
-          <p className="section-subtitle">Add your appliances and get personalized scheduling recommendations</p>
+          <p className="section-subtitle">
+            Add your appliances and get personalized scheduling recommendations
+            {usingAPI && <span className="lp-badge"><Cpu size={12} /> Live LP</span>}
+          </p>
         </div>
       </div>
 
@@ -469,8 +515,18 @@ export default function ApplianceOptimizer() {
 
           {appliances.length > 0 && (
             <div className="action-buttons">
-              <button className="optimize-btn" onClick={runOptimization} disabled={isOptimized}>
-                <Play size={18} /> {isOptimized ? 'Optimized!' : 'Run Optimization'}
+              <button 
+                className="optimize-btn" 
+                onClick={runOptimization} 
+                disabled={isOptimized || isOptimizing}
+              >
+                {isOptimizing ? (
+                  <><Loader2 className="spin" size={18} /> Optimizing...</>
+                ) : isOptimized ? (
+                  <><Cpu size={18} /> Optimized!</>
+                ) : (
+                  <><Play size={18} /> Run Optimization</>
+                )}
               </button>
               {isOptimized && (
                 <button className="reset-btn" onClick={resetOptimization}>

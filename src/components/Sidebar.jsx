@@ -99,7 +99,7 @@ export default function Sidebar({ isCollapsed, onToggle }) {
       <div className="sidebar-footer">
         {!isCollapsed && (
           <div className="project-info">
-            <span className="project-label">Final Year Project</span>
+            <span className="project-label">Data Science Project</span>
             <span className="project-year">2026</span>
           </div>
         )}

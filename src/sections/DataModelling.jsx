@@ -1,16 +1,18 @@
+import { useState, useEffect } from 'react';
 import { 
   Brain, 
   TrendingUp,
   Award,
   BarChart2,
-  Activity
+  Activity,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Plot from 'react-plotly.js';
 import './DataModelling.css';
 
-// Generate prediction data
-const generatePredictions = () => {
+// Fallback data if API is not running
+const generateFallbackPredictions = () => {
   const days = 30;
   const dates = Array.from({ length: days }, (_, i) => {
     const d = new Date(2016, 0, i + 1);
@@ -22,14 +24,14 @@ const generatePredictions = () => {
     return base + Math.random() * 8;
   });
   
-  const arima = actual.map((v, i) => v + (Math.random() - 0.5) * 8);
-  const prophet = actual.map((v, i) => v + (Math.random() - 0.5) * 5);
-  const lstm = actual.map((v, i) => v + (Math.random() - 0.5) * 3);
+  const arima = actual.map((v) => v + (Math.random() - 0.5) * 8);
+  const prophet = actual.map((v) => v + (Math.random() - 0.5) * 5);
+  const lstm = actual.map((v) => v + (Math.random() - 0.5) * 3);
   
   return { dates, actual, arima, prophet, lstm };
 };
 
-const models = [
+const defaultModels = [
   {
     id: 'arima',
     name: 'ARIMA',
@@ -64,7 +66,42 @@ const models = [
 ];
 
 export default function DataModelling() {
-  const predictions = generatePredictions();
+  const [predictions, setPredictions] = useState(null);
+  const [models, setModels] = useState(defaultModels);
+  const [loading, setLoading] = useState(true);
+  const [usingAPI, setUsingAPI] = useState(false);
+
+  useEffect(() => {
+    // Try to fetch from API, fallback to local generation
+    const fetchPredictions = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/predictions');
+        if (response.ok) {
+          const data = await response.json();
+          setPredictions(data);
+          setUsingAPI(true);
+          
+          // Update model metrics from API
+          if (data.metrics) {
+            setModels(prev => prev.map(model => ({
+              ...model,
+              metrics: data.metrics[model.id.toLowerCase()] || model.metrics
+            })));
+          }
+        } else {
+          throw new Error('API not available');
+        }
+      } catch (error) {
+        console.log('Using fallback predictions (API not running)');
+        setPredictions(generateFallbackPredictions());
+        setUsingAPI(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPredictions();
+  }, []);
 
   const chartLayout = {
     paper_bgcolor: 'rgba(0,0,0,0)',
@@ -82,6 +119,17 @@ export default function DataModelling() {
     legend: { orientation: 'h', y: -0.15, font: { size: 11 } },
   };
 
+  if (loading) {
+    return (
+      <section id="data-modelling" className="section">
+        <div className="loading-state">
+          <Loader2 className="spinner" size={32} />
+          <p>Loading predictions...</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="data-modelling" className="section">
       <div className="section-header">
@@ -90,7 +138,10 @@ export default function DataModelling() {
         </div>
         <div>
           <h2 className="section-title">Data Modelling & Evaluation</h2>
-          <p className="section-subtitle">Comparing forecasting models for energy demand prediction</p>
+          <p className="section-subtitle">
+            Comparing forecasting models for energy demand prediction
+            {usingAPI && <span className="api-badge">🔴 Live API</span>}
+          </p>
         </div>
       </div>
 
@@ -191,6 +242,7 @@ export default function DataModelling() {
                 mode: 'lines',
                 name: 'ARIMA',
                 line: { color: '#6366f1', width: 2, dash: 'dot' },
+                connectgaps: false,
               },
               {
                 x: predictions.dates,
@@ -199,6 +251,7 @@ export default function DataModelling() {
                 mode: 'lines',
                 name: 'Prophet',
                 line: { color: '#10b981', width: 2, dash: 'dot' },
+                connectgaps: false,
               },
               {
                 x: predictions.dates,
@@ -207,6 +260,7 @@ export default function DataModelling() {
                 mode: 'lines',
                 name: 'LSTM',
                 line: { color: '#f59e0b', width: 2 },
+                connectgaps: false,
               },
             ]}
             layout={{
