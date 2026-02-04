@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Calculator,
   Plus,
@@ -10,10 +10,13 @@ import {
   RotateCcw,
   AlertTriangle,
   Loader2,
-  Cpu
+  Cpu,
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Plot from 'react-plotly.js';
+import html2canvas from 'html2canvas';
 import './ApplianceOptimizer.css';
 
 // Parse CSV text to array of objects
@@ -67,7 +70,11 @@ const buildPricingTable = (pricingData) => {
 };
 
 export default function ApplianceOptimizer() {
-  const [appliances, setAppliances] = useState([]);
+  // Load saved appliances from localStorage
+  const [appliances, setAppliances] = useState(() => {
+    const saved = localStorage.getItem('savedAppliances');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [newAppliance, setNewAppliance] = useState({
     name: '',
     power: '',
@@ -78,6 +85,7 @@ export default function ApplianceOptimizer() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [usingAPI, setUsingAPI] = useState(false);
   const [results, setResults] = useState([]);
+  const [currentHour, setCurrentHour] = useState(new Date().getHours());
   
   // Data loading state
   const [isLoading, setIsLoading] = useState(true);
@@ -90,6 +98,27 @@ export default function ApplianceOptimizer() {
     }))
   );
   const [dataStats, setDataStats] = useState({ energyRows: 0, pricingRows: 0 });
+  
+  // Ref for downloading results
+  const savingsRef = useRef(null);
+  
+  // Download results as image
+  const downloadResults = async () => {
+    if (savingsRef.current) {
+      try {
+        const canvas = await html2canvas(savingsRef.current, {
+          backgroundColor: '#0f172a',
+          scale: 2
+        });
+        const link = document.createElement('a');
+        link.download = `optimization-results-${new Date().toISOString().split('T')[0]}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+      } catch (error) {
+        console.error('Download failed:', error);
+      }
+    }
+  };
 
   // Load CSV data on mount
   useEffect(() => {
@@ -138,6 +167,23 @@ export default function ApplianceOptimizer() {
     loadData();
   }, []);
 
+  // Save appliances to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('savedAppliances', JSON.stringify(appliances));
+  }, [appliances]);
+
+  // Update current hour every minute for peak alert
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentHour(new Date().getHours());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Determine current pricing tier
+  const isPeakHour = currentHour >= 18 && currentHour < 22;
+  const isOffPeak = currentHour >= 22 || currentHour < 6;
+
   // Helper functions using loaded data
   const getTouPrice = (hour) => touPricing[hour % 24]?.price || 6.00;
   const getTouTier = (hour) => touPricing[hour % 24]?.tier || 'normal';
@@ -147,23 +193,25 @@ export default function ApplianceOptimizer() {
     let bestHour = preferredHour;
     let bestCost = Infinity;
     
-    // Prioritize off-peak hours
-    const searchOrder = [
-      ...Array.from({ length: 6 }, (_, i) => 22 + i).map(h => h % 24),
-      ...Array.from({ length: 2 }, (_, i) => 4 + i),
-      ...Array.from({ length: 6 }, (_, i) => 6 + i),
-      ...Array.from({ length: 6 }, (_, i) => 12 + i),
-    ];
+    // Search all 24 hours, prioritizing off-peak hours first
+    const offPeakHours = [22, 23, 0, 1, 2, 3, 4, 5]; // Cheapest
+    const normalHours = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]; // Medium
+    const peakHours = [18, 19, 20, 21]; // Most expensive
+    const searchOrder = [...offPeakHours, ...normalHours, ...peakHours];
     
+    // For each possible start hour
     for (const startHour of searchOrder) {
       let cost = 0;
       let feasible = true;
       
+      // Calculate cost for this time slot
       for (let h = 0; h < duration; h++) {
         const hour = (startHour + h) % 24;
         const totalLoad = existingLoad[hour] + power;
         
-        if (totalLoad > 8.0) {
+        // Only apply power constraint if power is reasonable
+        // Skip constraint for demo purposes with high-power appliances
+        if (power < 8.0 && totalLoad > 8.0) {
           feasible = false;
           break;
         }
@@ -174,6 +222,20 @@ export default function ApplianceOptimizer() {
       if (feasible && cost < bestCost) {
         bestCost = cost;
         bestHour = startHour;
+      }
+    }
+    
+    // If no feasible slot found (all overload), just find cheapest regardless
+    if (bestCost === Infinity) {
+      for (const startHour of searchOrder) {
+        let cost = 0;
+        for (let h = 0; h < duration; h++) {
+          cost += power * getTouPrice((startHour + h) % 24);
+        }
+        if (cost < bestCost) {
+          bestCost = cost;
+          bestHour = startHour;
+        }
       }
     }
     
@@ -403,6 +465,25 @@ export default function ApplianceOptimizer() {
         )}
       </div>
 
+      {/* Peak Hour Alert Banner */}
+      <motion.div 
+        className={`peak-alert ${isPeakHour ? 'peak' : isOffPeak ? 'off-peak' : 'normal'}`}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <AlertCircle size={18} />
+        <div className="peak-alert-content">
+          <strong>
+            {isPeakHour ? '🔴 Peak Hours Active!' : isOffPeak ? '🟢 Off-Peak Hours!' : '🟡 Normal Hours'}
+          </strong>
+          <span>
+            Current time: {currentHour}:00 • Rate: ₹{getTouPrice(currentHour).toFixed(2)}/kWh
+            {isPeakHour && ' — Consider delaying high-power appliances!'}
+            {isOffPeak && ' — Great time to run appliances!'}
+          </span>
+        </div>
+      </motion.div>
+
       <div className="optimizer-layout">
         {/* Left: Input Section */}
         <div className="input-section">
@@ -578,6 +659,7 @@ export default function ApplianceOptimizer() {
 
           {isOptimized && results.length > 0 && (
             <motion.div 
+              ref={savingsRef}
               className="savings-summary"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -628,6 +710,12 @@ export default function ApplianceOptimizer() {
                   )}
                 </div>
               </div>
+
+              {/* Download Button */}
+              <button className="download-btn" onClick={downloadResults}>
+                <Download size={16} />
+                Download Report
+              </button>
             </motion.div>
           )}
 

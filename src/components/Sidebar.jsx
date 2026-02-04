@@ -10,7 +10,8 @@ import {
   Calculator,
   ChevronLeft,
   ChevronRight,
-  Leaf
+  Leaf,
+  Sun
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -23,6 +24,7 @@ const navItems = [
   { id: 'optimization', icon: Zap, label: 'Optimization Engine', section: 'optimization' },
   { id: 'impact', icon: TrendingUp, label: 'Impact & Deployment', section: 'impact' },
   { id: 'optimizer-tool', icon: Calculator, label: 'Smart Optimizer', section: 'optimizer-tool' },
+  { id: 'solar', icon: Sun, label: 'Solar Simulation', section: 'solar-simulation' },
 ];
 
 export default function Sidebar({ isCollapsed, onToggle }) {

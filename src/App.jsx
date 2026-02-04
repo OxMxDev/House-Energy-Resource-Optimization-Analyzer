@@ -9,6 +9,7 @@ import DataModelling from './sections/DataModelling';
 import OptimizationEngine from './sections/OptimizationEngine';
 import ImpactDeployment from './sections/ImpactDeployment';
 import ApplianceOptimizer from './sections/ApplianceOptimizer';
+import SolarSimulation from './sections/SolarSimulation';
 import './App.css';
 
 export default function App() {
@@ -32,7 +33,9 @@ export default function App() {
         <OptimizationEngine />
         <ImpactDeployment />
         <ApplianceOptimizer />
+        <SolarSimulation />
       </main>
     </div>
   );
 }
+
