@@ -224,6 +224,11 @@
   color: #22c55e;
 }
 
+.status-badge.prototype {
+  background: rgba(6, 182, 212, 0.2);
+  color: #06b6d4;
+}
+
 .status-badge.planned {
   background: rgba(99, 102, 241, 0.2);
   color: var(--primary-light);

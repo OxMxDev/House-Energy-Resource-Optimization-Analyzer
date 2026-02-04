@@ -16,8 +16,8 @@ const scalabilityCards = [
   {
     icon: Home,
     title: 'Smart Homes',
-    description: 'Integration with IoT devices and smart meters for automated scheduling',
-    status: 'Ready'
+    description: 'Algorithm ready for IoT integration with smart meters and plugs',
+    status: 'Prototype'
   },
   {
     icon: Building2,
